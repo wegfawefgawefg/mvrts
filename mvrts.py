@@ -17,6 +17,7 @@ from pygame.math import Vector2
 
 from unit import Unit
 from factory import Factory
+from hq import HQ
 from grid import Grid
 
 def handle_input():
@@ -33,38 +34,39 @@ def main():
     clock = pygame.time.Clock()
     running = True
 
-
-    team = "red"
+    TEAM = "red"
     grid = Grid(cell_size=32)
 
+    units = []
+    buildings = []
     # selection state
     selected_units = []
     selection_start = None
     selection_end = None
     selecting = False
 
-    units = []
-    for i in range(1):
-        unit = Unit(
-            team=team, 
-            pos=Vector2(random.randrange(WIDTH), random.randrange(HEIGHT)))
-        units.append(unit)
-        grid.add(unit)
+    hqs = {}
+    hq = HQ(pos=Vector2(WIDTH/2, HEIGHT/4 * 3), grid=grid, team="red")
+    hqs["red"] = hq
+    buildings.append(hq)
+    hq = HQ(pos=Vector2(WIDTH/2, HEIGHT/4 * 1), grid=grid, team="blue")
+    hqs["blue"] = hq
+    buildings.append(hq)
 
-    factories = []
     for i in range(3):
         factory = Factory(
             pos=Vector2(i * WIDTH // 4 + WIDTH // 4, HEIGHT * 0.1),
-            grid=grid)
-        factories.append(factory)
+            grid=grid,
+            team="blue" if i == 1 else None)
+        buildings.append(factory)
         grid.add(factory)
     for i in range(3):
         factory = Factory(
             pos=Vector2( i * WIDTH // 4 + WIDTH // 4, HEIGHT * 0.9),
-            grid=grid)
-        factories.append(factory)
+            grid=grid,
+            team="red" if i == 1 else None)
+        buildings.append(factory)
         grid.add(factory)
-
 
     while running:
         for event in pygame.event.get():
@@ -97,6 +99,7 @@ def main():
                     selection_rect = pygame.Rect(sel_low, sel_high - sel_low)
                     selected_units = grid.query_rect(selection_rect)
                     selected_units = [u for u in selected_units if isinstance(u, Unit)]
+                    selected_units = [u for u in selected_units if u.team == TEAM]
                     
             elif event.type == MOUSEMOTION:
                 if selecting:
@@ -105,11 +108,27 @@ def main():
             if event.type == KEYDOWN and event.key == K_q:
                 for s in selected_units:
                     s.target = None
+            # team red if press a
+            if event.type == KEYDOWN and event.key == K_a:
+                TEAM = "red"
+            # team blue if press s
+            if event.type == KEYDOWN and event.key == K_s:
+                TEAM = "blue"
 
         ''' UPDATE ZONE '''            
         screen.fill((0,0,0,0))
-        for factory in factories:
-            new_unit = factory.step()
+        # check for loss conditions
+        teams = ["red", "blue"]
+        for team, op in zip(teams, reversed(teams)):
+            if not hqs[team].team == team:
+                font = pygame.font.SysFont("Arial", 72)
+                text = font.render(f"{op} Team Wins!", True, (0,0,255))
+                text_rect = text.get_rect()
+                text_rect.center = (WIDTH/2, HEIGHT/2)
+                screen.blit(text, text_rect)
+
+        for building in buildings:
+            new_unit = building.step()
             if new_unit:
                 units.append(new_unit)
                 grid.add(new_unit)
@@ -122,8 +141,8 @@ def main():
 
         ''' RENDER ZONE '''
         grid.draw(screen)
-        for factory in factories:
-            factory.draw(screen)
+        for building in buildings:
+            building.draw(screen)
         for unit in units:
             unit.draw(screen)
         for unit in selected_units:
