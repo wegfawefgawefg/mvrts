@@ -100,7 +100,6 @@ def main():
                     selected_units = grid.query_rect(selection_rect)
                     selected_units = [u for u in selected_units if isinstance(u, Unit)]
                     selected_units = [u for u in selected_units if u.team == TEAM]
-                    
             elif event.type == MOUSEMOTION:
                 if selecting:
                     selection_end = Vector2(event.pos)
@@ -137,6 +136,7 @@ def main():
             in_range = grid.query_circle(unit.pos, Unit.PERSONAL_SPACE)
             not_me = [u for u in in_range if u != unit]
             unit.space_out(not_me)
+            unit.constrain_to_screen()
             grid.update(unit)
 
         ''' RENDER ZONE '''

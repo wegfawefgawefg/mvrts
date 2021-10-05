@@ -16,15 +16,13 @@ class Building:
         self.pos = pos
         self.rect = pygame.Rect(pos.x - self.RADIUS, pos.y - self.RADIUS, self.RADIUS * 2, self.RADIUS * 2)
 
-        self.capture = 0
+        self.capture = Building.CAPTURE_POINTS
         self.messages = {}
 
     def draw(self, screen):
         pygame.draw.circle(screen, (255, 255, 255, 200), self.pos, self.CAPTURE_RADIUS, 2)
         color = constants.team_colors[self.team]
         pygame.draw.rect(screen,color,self.rect,0)
-
-
 
         # draw messages
         messages = sorted(self.messages.keys())
@@ -48,15 +46,10 @@ class Building:
             self.messages["contested"] = "contested"
         elif len(teams_around) == 1:
             team_around = teams_around.pop()
-            if self.team is None:
-                self.capture += len(units_around)
-                self.messages["capture"] = f"capture: {self.capture}"
-                if self.capture >= self.CAPTURE_POINTS:
-                    self.team = team_around
-                    self.capture = self.CAPTURE_POINTS
-            elif not self.team == team_around:
+            if not self.team == team_around:
                 self.capture -= len(units_around)
                 self.messages["capture"] = f"capture: {self.capture}"
                 if self.capture <= 0:
-                    self.team = None
+                    self.team = team_around
+                    self.capture = Building.CAPTURE_POINTS
         return None
